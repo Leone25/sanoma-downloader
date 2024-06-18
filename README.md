@@ -10,7 +10,7 @@ Download your books from [Samona](https://samona.it) as PDFs.
 2. Open a terminal window in the folder where you extracted the repo
 3. Run `npm i` to install all the required dependencies
 
-**PLEASE NOTE THAT YOU ALSO NEED TO INSTALL [INKSCAPE](https'://inkscape.org/) AND MAKE SURE THAT IT'S REACHABLE TROUGH THE COMMANDLINE (AKA INKSCAPE MUST BE IN YOUR PATH VARIABLE)**
+**PLEASE NOTE THAT YOU ALSO NEED TO INSTALL [INKSCAPE](https://inkscape.org/) AND MAKE SURE THAT IT'S REACHABLE TROUGH THE COMMANDLINE (AKA INKSCAPE MUST BE IN YOUR PATH VARIABLE)**
 
 ### Usage
 
