@@ -1,0 +1,20 @@
+{
+  "name": "samona-downloader",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "author": "Enrico",
+  "license": "MIT",
+  "description": "Download your books from Samona as PDFs",
+  "type": "module",
+  "dependencies": {
+    "fs-extra": "^11.2.0",
+    "node-fetch": "^3.3.2",
+    "pdf-lib": "^1.17.1",
+    "prompt-sync": "^4.2.0",
+    "yargs": "^17.7.2",
+    "yauzl": "^3.1.3"
+  }
+}
