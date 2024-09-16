@@ -1,6 +1,6 @@
 # Sanoma-downloader
 
-Download your books from [Sanoma](https://Sanoma.it) as PDFs.
+Download your books from [Sanoma](https://sanoma.it) as PDFs.
 
 ## How to use
 
