@@ -1,6 +1,6 @@
-# Samona-downloader
+# Sanoma-downloader
 
-Download your books from [Samona](https://samona.it) as PDFs.
+Download your books from [Sanoma](https://sanoma.it) as PDFs.
 
 ## How to use
 
@@ -16,7 +16,7 @@ Download your books from [Samona](https://samona.it) as PDFs.
 
 1. Open a terminal window in the folder where you extracted the repo
 2. Run `node index.js`
-3. Enter your Samona email and password
+3. Enter your Sanoma email and password
 4. Enter the id (first column) of the book you want to download
 5. Wait for the download to finish
 
