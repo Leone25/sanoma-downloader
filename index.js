@@ -86,7 +86,7 @@ const yauzlFromBuffer = promisify(yauzl.fromBuffer);
 		let books = {};
 		let pages = 1;
 		for (let i = 1; i <= pages; i++) {
-			let newBooks = await fetch('https://npmoffline.sanoma.it/mcs/api/v1/books?app=true', {
+			let newBooks = await fetch(`https://npmoffline.sanoma.it/mcs/users/${id}/products/books/`, {
 				headers: {
 					'X-Auth-Token': 'Bearer ' + userAuth.result.data.access_token,
 				}
