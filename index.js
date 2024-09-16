@@ -81,6 +81,12 @@ const yauzlFromBuffer = promisify(yauzl.fromBuffer);
 
 	let gedi = argv.gedi;
 
+	await fetch(`https://npmoffline.sanoma.it/mcs/users/${id}/products/`, {
+		headers: {
+			'X-Auth-Token': 'Bearer ' + userAuth.result.data.access_token,
+		}
+	})
+
 	if (!gedi) {
 		console.log('Fetching book list');
 		let books = {};
