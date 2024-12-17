@@ -7,6 +7,7 @@ import fs from 'fs';
 import fsExtra from 'fs-extra';
 import path from 'path';
 import { spawn } from 'child_process';
+import { pipeline } from 'stream';
 
 const argv = yargs(process.argv)
 	.option('id', {
@@ -164,13 +165,19 @@ const yauzlFromFile = promisify(yauzl.open);
 
 		console.log('Downloading "' + book.name + '"');
 
-		let zip = await fetch(book.url_download).then((res) => res.arrayBuffer());
-		
-		fs.writeFileSync('tmp/book.zip', Buffer.from(zip));
+		let zip = await fetch(book.url_download);
+
+		if (!zip.ok) {
+			console.error('Failed to download zip');
+			process.exit(1);
+		}
+
+		await promisify(pipeline)(zip.body, fs.createWriteStream('tmp/book.zip'));
 	} else {
 		console.log('Skipping download');
-		if (!fs.existsSync('tmp/book.zip')) {
-			console.error('No zip file found in the temp folder');
+		let stats = await fs.promises.stat('tmp/book.zip');
+		if (!stats.isFile()) {
+			console.error('No zip file found in the tmp folder');
 			process.exit(1);
 		}
 	}
@@ -212,7 +219,8 @@ const yauzlFromFile = promisify(yauzl.open);
 		let pdf = await PDFDocument.create();
 		
 		for (let i = 0; i < total; i++) {
-			let page = await PDFDocument.load(fs.readFileSync(`tmp/output/${i+1}.pdf`));
+			let file = await fs.promises.readFile(`tmp/output/${i+1}.pdf`);
+			let page = await PDFDocument.load(file);
 			let [copiedPage] = await pdf.copyPages(page, [0]);
 			pdf.addPage(copiedPage);
 		}
