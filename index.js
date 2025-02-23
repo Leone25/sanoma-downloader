@@ -115,53 +115,36 @@ const yauzlFromFile = promisify(yauzl.open);
 			process.exit(1);
 		}
 
-		let gedi = argv.gedi;
-
 		await fetch(`https://npmoffline.sanoma.it/mcs/users/${id}/products/`, {
 			headers: {
 				'X-Auth-Token': 'Bearer ' + userAuth.result.data.access_token,
 			}
 		})
-
-		if (!gedi) {
-			console.log('Fetching book list');
-			let books = {};
-			let pages = 1;
-			for (let i = 1; i <= pages; i++) {
-				let newBooks = await fetch(`https://npmoffline.sanoma.it/mcs/users/${id}/products/books/`, {
-					headers: {
-						'X-Auth-Token': 'Bearer ' + userAuth.result.data.access_token,
-					}
-				}).then((res) => res.json());
-
-				pages = newBooks.result.total_size / newBooks.result.page_size;
-
-				for (let book of newBooks.result.data) {
-					books[book.gedi] = book;
+		console.log('Fetching book list');
+		let books = {};
+		let pages = 1;
+		for (let i = 1; i <= pages; i++) {
+			let newBooks = await fetch(`https://npmoffline.sanoma.it/mcs/api/v1/books?app=true`, {
+				headers: {
+					'X-Auth-Token': 'Bearer ' + userAuth.result.data.access_token,
 				}
+			}).then((res) => res.json());
+
+			pages = newBooks.result.total_size / newBooks.result.page_size;
+
+			for (let book of newBooks.result.data) {
+				books[book.gedi] = book;
 			}
-
-			console.log('Books:');
-			console.table(Object.fromEntries(Object.entries(books).map(([id, book]) => [id, book.name])));
-
-			while (!gedi)
-				gedi = prompt('Enter the book\'s gedi: ');
 		}
 
-		console.log('Fetching book data');
+		console.log('Books:');
+		console.table(Object.fromEntries(Object.entries(books).map(([id, book]) => [id, book.name])));
 
-		book = await fetch(`https://npmoffline.sanoma.it/mcs/users/${id}/products/books/${gedi}?app=true`, {
-			headers: {
-				'X-Auth-Token': 'Bearer ' + userAuth.result.data.access_token,
-			}
-		}).then((res) => res.json());
+		let gedi = argv.gedi;
+		while (!gedi)
+			gedi = prompt('Enter the book\'s gedi: ');
 
-		if (book.code != 0) {
-			console.error('Failed to fetch book data', book.message);
-			process.exit(1);
-		}
-
-		book = book.result.data;
+		book = books[gedi];
 
 		console.log('Downloading "' + book.name + '"');
 
@@ -188,9 +171,10 @@ const yauzlFromFile = promisify(yauzl.open);
 	let openReadStream = promisify(zipFile.openReadStream.bind(zipFile));
 
 	zipFile.on('entry', async (entry) => {
-		if (!entry.fileName.startsWith("assets/book/pages") || entry.fileName.endsWith('/')) return;
+		console.log('Entry: ' + entry.fileName);
+		if (!entry.fileName.startsWith("pages") || entry.fileName.endsWith('/')) return;
 
-		let filePath = entry.fileName.slice(18);
+		let filePath = entry.fileName.slice(5);
 
 		console.log('Extracting ' + filePath);
 
