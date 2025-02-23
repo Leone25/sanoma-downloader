@@ -22,6 +22,8 @@ Download your books from [Sanoma](https://sanoma.it) as PDFs.
 
 Further options are available, run `node index.js --help` for more info.
 
+Note: sometimes the book list might be empty. To fix this, stop the script with CTRL+C, then please install the [My Digital Book application](https://sanomaitalia-assistenzadigitale.freshdesk.com/support/solutions/articles/103000296908-scaricare-l-app-my-digital-book) on any device (even a different one from the one you are running the script on) and login, then try again the script.
+
 Enjoy
 
 Remember that you are responsible for what you are doing on the internet and even tho this script exists it might not be legal in your country to create personal backups of books.
