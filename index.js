@@ -232,9 +232,27 @@ const yauzlFromFile = promisify(yauzl.open);
 	});
 })();
 
-async function convertPage(input, output) {
+let inkscapeVersion; // old = 0.92 or older, new = anything after
+
+async function getInkscapeVersion() {
 	return new Promise((resolve, reject) => {
-		let convert = spawn('inkscape', ['--export-filename='+output, input]);
+		let convert = spawn('inkscape', ['--version']);
+
+		convert.stdout.on("data", data => {
+			const version = data.toString();
+			const [_, major, minor ] = version.match(/(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)/);
+			if (major == 0 && minor <= 92) inkscapeVersion = "old";
+			else inkscapeVersion = "new";
+			resolve();
+		});
+	});
+}
+
+async function convertPage(input, output) {
+	return new Promise(async (resolve, reject) => {
+		if (!inkscapeVersion) await getInkscapeVersion();
+
+		let convert = spawn('inkscape', [(version == "old" ? '--export-pdf=' : '--export-filename=') +output, input]);
 
 		convert.on('close', (code) => {
 			if (code == 0) resolve();
