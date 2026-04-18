@@ -252,7 +252,7 @@ async function convertPage(input, output) {
 	return new Promise(async (resolve, reject) => {
 		if (!inkscapeVersion) await getInkscapeVersion();
 
-		let convert = spawn('inkscape', [(version == "old" ? '--export-pdf=' : '--export-filename=') +output, input]);
+		let convert = spawn('inkscape', [(inkscapeVersion == "old" ? '--export-pdf=' : '--export-filename=') +output, input]);
 
 		convert.on('close', (code) => {
 			if (code == 0) resolve();
