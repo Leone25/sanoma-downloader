@@ -1,13 +1,12 @@
 import yargs from 'yargs';
 import PromptSync from 'prompt-sync';
 import fetch from 'node-fetch';
-import yauzl from 'yauzl';
+import unzipper from 'unzipper';
 import { PDFDocument } from 'pdf-lib';
 import fs from 'fs';
 import fsExtra from 'fs-extra';
 import path from 'path';
 import { spawn } from 'child_process';
-import { pipeline } from 'stream';
 
 const argv = yargs(process.argv)
 	.option('id', {
@@ -56,19 +55,6 @@ const argv = yargs(process.argv)
 	.argv;
 
 const prompt = PromptSync({ sigint: true });
-
-function promisify(api) {
-	return function (...args) {
-		return new Promise(function (resolve, reject) {
-			api(...args, function (err, response) {
-				if (err) return reject(err);
-				resolve(response);
-			});
-		});
-	};
-}
-
-const yauzlFromFile = promisify(yauzl.open);
 
 (async () => {
 
@@ -155,7 +141,7 @@ const yauzlFromFile = promisify(yauzl.open);
 			process.exit(1);
 		}
 
-		await promisify(pipeline)(zip.body, fs.createWriteStream('tmp/book.zip'));
+		await fs.promises.writeFile("tmp/book.zip", Buffer.from(await zip.arrayBuffer()));
 	} else {
 		console.log('Skipping download');
 		let stats = await fs.promises.stat('tmp/book.zip');
@@ -167,69 +153,74 @@ const yauzlFromFile = promisify(yauzl.open);
 
 	console.log('Extracting zip');
 
-	let zipFile = await yauzlFromFile('tmp/book.zip');
-	let openReadStream = promisify(zipFile.openReadStream.bind(zipFile));
+	let zipFile = fs
+		.createReadStream('tmp/book.zip')
+		.pipe(unzipper.Parse({forceStream: true}));
 
-	zipFile.on('entry', async (entry) => {
-		console.log('Entry: ' + entry.fileName);
-		if (!entry.fileName.startsWith("pages") || entry.fileName.endsWith('/')) return;
+	for await (let entry of zipFile) {
+		if (!entry.path.startsWith("pages") || entry.path.endsWith("/")) {
+			entry.autodrain();
+			continue;
+		}
 
-		let filePath = entry.fileName.slice(5);
+		const filePath = entry.path.slice(5);
 
-		console.log('Extracting ' + filePath);
+		console.log(`Extracting ${filePath}`);
 
 		let folder = path.dirname(filePath);
 		await fsExtra.ensureDir(`tmp/pages/${folder}`);
 
-		let page = await openReadStream(entry);
+		await new Promise((resolve, reject) => {
+			const writeStream = fs.createWriteStream(`tmp/pages/${filePath}`);
+			writeStream.on("finish", resolve);
+			writeStream.on("error", reject);
 
-		let file = fs.createWriteStream(`tmp/pages/${filePath}`);
-		page.pipe(file);
-	});
+			entry.on("error", reject);
+			entry.pipe(writeStream);
+		});
+	}
 
-	zipFile.on('end', async () => {
-		await fs.promises.mkdir('tmp/output', { recursive: true });
-		let folders = (await fs.promises.readdir('tmp/pages')).filter((file) => /^\d+$/g.test(file));
+	await fs.promises.mkdir('tmp/output', { recursive: true });
+	let folders = (await fs.promises.readdir('tmp/pages')).filter((file) => /^\d+$/g.test(file));
 
-		let total = folders.length;
+	let total = folders.length;
 
-		for (let i = 0; i < total; i++) {
-			console.log('Converting page ' + (i + 1) + ' of ' + total);
-			await convertPage(`tmp/pages/${i+1}/${i+1}.svg`, `tmp/output/${i+1}.pdf`);
-		}
+	for (let i = 0; i < total; i++) {
+		console.log(`Converting page ${i + 1} of ${total}`);
+		await convertPage(`tmp/pages/${i+1}/${i+1}.svg`, `tmp/output/${i+1}.pdf`);
+	}
 
-		console.log('Merging pages');
+	console.log('Merging pages');
 
-		let pdf = await PDFDocument.create();
-		
-		for (let i = 0; i < total; i++) {
-			let file = await fs.promises.readFile(`tmp/output/${i+1}.pdf`);
-			let page = await PDFDocument.load(file);
-			let [copiedPage] = await pdf.copyPages(page, [0]);
-			pdf.addPage(copiedPage);
-		}
+	let pdf = await PDFDocument.create();
 
-		console.log('Saving PDF');
+	for (let i = 0; i < total; i++) {
+		let file = await fs.promises.readFile(`tmp/output/${i + 1}.pdf`);
+		let page = await PDFDocument.load(file);
+		let [copiedPage] = await pdf.copyPages(page, [0]);
+		pdf.addPage(copiedPage);
+	}
 
-		let name = argv.output;
-		if (argv.download && !name) {
-			name = book.name.replace(/[\\/:*?"<>|]/g, '') + '.pdf';
-		} else if (!name) {
-			name = 'output.pdf';
-		}
+	console.log('Saving PDF');
 
-		await fs.promises.writeFile(name, await pdf.save());
+	let name = argv.output;
+	if (argv.download && !name) {
+		name = book.name.replace(/[\\/:*?"<>|]/g, '') + '.pdf';
+	} else if (!name) {
+		name = 'output.pdf';
+	}
 
-		if (argv.clean) {
-			console.log('Cleaning up');
+	await fs.promises.writeFile(name, await pdf.save());
 
-			await fsExtra.remove('tmp');
-		} else {
-			console.log('Skipping clean up, make sure to delete the temp folder when you are done');
-		}
+	if (argv.clean) {
+		console.log('Cleaning up');
 
-		console.log('Done');
-	});
+		await fsExtra.remove('tmp');
+	} else {
+		console.log('Skipping clean up, make sure to delete the temp folder when you are done');
+	}
+
+	console.log('Done');
 })();
 
 let inkscapeVersion; // old = 0.92 or older, new = anything after
