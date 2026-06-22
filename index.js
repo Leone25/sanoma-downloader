@@ -101,7 +101,7 @@ const prompt = PromptSync({ sigint: true });
 			process.exit(1);
 		}
 
-		await fetch(`https://npmoffline.sanoma.it/mcs/users/${id}/products/`, {
+		await fetch(`https://npmoffline.sanoma.it/mcs/api/v1/products`, {
 			headers: {
 				'X-Auth-Token': 'Bearer ' + userAuth.result.data.access_token,
 			}
