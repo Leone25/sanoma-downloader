@@ -157,13 +157,16 @@ const prompt = PromptSync({ sigint: true });
 		.createReadStream('tmp/book.zip')
 		.pipe(unzipper.Parse({forceStream: true}));
 
+	await fsExtra.ensureDir('tmp/pages');
+
 	for await (let entry of zipFile) {
-		if (!entry.path.startsWith("pages") || entry.path.endsWith("/")) {
+		const match = entry.path.match(/(?:^|\/)pages\/(.+)$/);
+		if (!match || entry.path.endsWith("/")) {
 			entry.autodrain();
 			continue;
 		}
 
-		const filePath = entry.path.slice(5);
+		const filePath = match[1];
 
 		console.log(`Extracting ${filePath}`);
 
